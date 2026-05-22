@@ -19,18 +19,24 @@ export default function Outreach() {
   const [selectedLog, setSelectedLog] = useState<any>(null);
   
   // Filters
-  const [filterGap, setFilterGap] = useState("NO"); // Default to open gaps
-  const [filterFollowup, setFilterFollowup] = useState("N"); // Default to no follow-up
+  const [filterGap, setFilterGap] = useState("ALL");
+  const [filterFollowup, setFilterFollowup] = useState("ALL");
+  const [filterMeasure, setFilterMeasure] = useState("ALL");
 
   const loadData = () => {
-    fetchMembers({ compliant: filterGap !== 'ALL' ? filterGap : undefined, follow_up: filterFollowup !== 'ALL' ? filterFollowup : undefined })
+    let params: any = {};
+    if (filterGap !== 'ALL') params.compliant = filterGap;
+    if (filterFollowup !== 'ALL') params.follow_up = filterFollowup;
+    if (filterMeasure !== 'ALL') params.measure = filterMeasure;
+    
+    fetchMembers(params)
       .then(res => setMembers(res.data));
     fetchOutreachLog().then(res => setLogs(res));
   };
 
   useEffect(() => {
     loadData();
-  }, [filterGap, filterFollowup]);
+  }, [filterGap, filterFollowup, filterMeasure]);
 
   const toggleAll = () => {
     if (selected.size === members.length) {
@@ -82,8 +88,8 @@ export default function Outreach() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-orange-800">Bulk Outreach Campaign</h1>
-        <Button onClick={handleBulkOutreach} disabled={selected.size === 0} className="bg-orange-600 hover:bg-blue-700">
+        <h1 className="text-2xl font-bold text-slate-900">Bulk Outreach Campaign</h1>
+        <Button onClick={handleBulkOutreach} disabled={selected.size === 0} className="bg-[#F37021] hover:bg-[#d9611c] text-white disabled:bg-[#F37021]/50 disabled:opacity-100">
           <Send className="w-4 h-4 mr-2" /> 
           Generate & Send ({selected.size})
         </Button>
@@ -91,10 +97,23 @@ export default function Outreach() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-sm">
-          <CardHeader className="bg-orange-50 border-b border-orange-100 pb-4">
+          <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Target List</CardTitle>
               <div className="flex gap-2">
+                <Select value={filterMeasure} onValueChange={(val) => setFilterMeasure(val!)}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs bg-white">
+                    <SelectValue placeholder="Measure">
+                      {filterMeasure === 'ALL' ? 'All Measures' : filterMeasure}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Measures</SelectItem>
+                    <SelectItem value="OMW">OMW</SelectItem>
+                    <SelectItem value="SPC">SPC</SelectItem>
+                    <SelectItem value="COL">COL</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={filterGap} onValueChange={(val) => setFilterGap(val!)}>
                   <SelectTrigger className="w-[140px] h-8 text-xs bg-white">
                     <SelectValue placeholder="Gap Status">
@@ -138,8 +157,8 @@ export default function Outreach() {
                     <TableRow key={`${m.id_normalized}-${m.measure}-${idx}`}>
                       <TableCell><Checkbox checked={selected.has(m.id_normalized)} onCheckedChange={() => toggleOne(m.id_normalized)} /></TableCell>
                       <TableCell>
-                        <div className="font-medium text-orange-900">{m.member_name}</div>
-                        <div className="text-xs text-orange-500">{m.primary_language}</div>
+                        <div className="font-medium text-slate-900">{m.member_name}</div>
+                        <div className="text-xs text-slate-500">{m.primary_language}</div>
                       </TableCell>
                       <TableCell>{m.measure}</TableCell>
                       <TableCell>
@@ -149,7 +168,7 @@ export default function Outreach() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {members.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-8 text-orange-500">No members match filters.</TableCell></TableRow>}
+                  {members.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">No members match filters.</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </div>
@@ -157,36 +176,36 @@ export default function Outreach() {
         </Card>
 
         <Card className="shadow-sm">
-          <CardHeader className="bg-orange-50 border-b border-orange-100 flex flex-row items-center justify-between py-3">
-            <CardTitle className="text-lg flex items-center gap-2 m-0"><Activity className="w-4 h-4"/> Activity Log</CardTitle>
+          <CardHeader className="bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between py-3">
+            <CardTitle className="text-lg flex items-center gap-2 m-0 text-slate-800"><Activity className="w-4 h-4"/> Activity Log</CardTitle>
             <Button variant="ghost" size="sm" onClick={handleClearLog} className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2">
               <Trash2 className="w-4 h-4 mr-1" /> Clear
             </Button>
           </CardHeader>
           <CardContent className="p-0 max-h-[400px] overflow-auto">
-            <div className="divide-y divide-orange-100">
+            <div className="divide-y divide-slate-100">
               {logs.map((log: any, i) => (
-                <div key={i} onClick={() => setSelectedLog(log)} className="p-4 hover:bg-orange-50/50 cursor-pointer transition-colors group">
+                <div key={i} onClick={() => setSelectedLog(log)} className="p-4 hover:bg-slate-50/50 cursor-pointer transition-colors group">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-semibold text-sm text-orange-800 flex items-center gap-2">
+                    <span className="font-semibold text-sm text-slate-800 flex items-center gap-2">
                       {log.member_id}
-                      <Eye className="w-3.5 h-3.5 text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Eye className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                     <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">{log.status}</Badge>
                   </div>
-                  <div className="text-xs text-orange-500 mb-2 flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded bg-orange-200 text-orange-700">{log.channel}</span>
+                  <div className="text-xs text-slate-500 mb-2 flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{log.channel}</span>
                     <span>{log.language}</span>
                   </div>
-                  <div className="text-sm text-orange-600 line-clamp-2 bg-orange-100 p-2 rounded italic">
+                  <div className="text-sm text-slate-700 line-clamp-2 bg-slate-50 border border-slate-100 p-2 rounded italic">
                     "{log.content}"
                   </div>
-                  <div className="text-[10px] text-orange-400 mt-2 text-right">
+                  <div className="text-[10px] text-slate-400 mt-2 text-right">
                     {new Date(log.created_at).toLocaleString()}
                   </div>
                 </div>
               ))}
-              {logs.length === 0 && <div className="p-8 text-center text-orange-500 text-sm">No outreach history.</div>}
+              {logs.length === 0 && <div className="p-8 text-center text-slate-500 text-sm">No outreach history.</div>}
             </div>
           </CardContent>
         </Card>
@@ -194,15 +213,15 @@ export default function Outreach() {
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-orange-600" />
+            <DialogTitle className="flex items-center gap-2 text-slate-800">
+              <Activity className="w-5 h-5 text-slate-600" />
               Outreach Message Content
             </DialogTitle>
             <DialogDescription>
               Sent to {selectedLog?.member_id} via {selectedLog?.channel} in {selectedLog?.language} on {selectedLog ? new Date(selectedLog.created_at).toLocaleString() : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 p-4 bg-orange-50 rounded-md border border-orange-200 text-sm text-orange-800 whitespace-pre-wrap font-mono leading-relaxed h-[300px] overflow-y-auto shadow-inner">
+          <div className="mt-4 p-4 bg-slate-50 rounded-md border border-slate-200 text-sm text-slate-800 whitespace-pre-wrap font-mono leading-relaxed h-[300px] overflow-y-auto shadow-inner">
             {selectedLog?.content}
           </div>
         </DialogContent>

@@ -20,23 +20,23 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`flex h-screen flex-col bg-[var(--sidebar)] border-r border-orange-200/60 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
-      
+    <div className={`flex h-screen flex-col bg-[#FFF5EE] border-r border-orange-200/60 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[320px]'}`}>
+
       {/* Header / Logo Block */}
       <div className="flex items-center gap-3 h-20 px-4 overflow-visible relative mt-2">
-        <div className="w-11 h-11 flex items-center justify-center text-white font-bold text-sm shrink-0">
+        <div className="w-16 h-16 flex items-center justify-center text-white font-bold text-sm shrink-0">
           <Image
             src="/download.png"
             alt="HEDIS Logo"
-            width={44}
-            height={44}
+            width={58}
+            height={58}
             className="w-full h-full object-contain"
           />
         </div>
         {!isCollapsed && (
           <div className="flex flex-col">
-            <span className="font-bold text-orange-950 leading-tight">HEDIS.Ai</span>
-            <span className="text-[11px] text-orange-800/70 font-medium">Healthcare Intelligence</span>
+            <span className="text-xl font-bold text-orange-950 leading-tight">HEDIS.Ai</span>
+            <span className="text-sm text-orange-800/70 font-medium mt-1">Healthcare Intelligence</span>
           </div>
         )}
         <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-6 p-1 bg-white border border-orange-200 text-orange-400 hover:text-primary hover:bg-orange-50 rounded-full flex-shrink-0 shadow-sm z-50 transition-colors">
@@ -44,14 +44,6 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Main Call to Action */}
-      <div className="px-4 py-2 mb-2">
-        <button className={`w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl py-3 text-sm font-semibold shadow-sm transition-colors ${isCollapsed ? 'px-0' : 'px-4'}`}>
-          <Plus className="w-[18px] h-[18px]" />
-          {!isCollapsed && <span>New Campaign</span>}
-        </button>
-      </div>
-      
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 px-3 pt-2">
         {!isCollapsed && <div className="px-3 py-2 text-[11px] font-bold text-orange-400/80 tracking-widest uppercase">Navigation</div>}
@@ -61,11 +53,10 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 border ${
-                isActive 
-                  ? "bg-accent text-accent-foreground border-accent shadow-sm" 
-                  : "text-orange-900/70 hover:bg-white hover:border-orange-200 border-transparent"
-              } ${isCollapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-base font-semibold transition-all duration-200 border ${isActive
+                ? "bg-[#FFDAB9] text-orange-950 border-[#FFDAB9] shadow-sm"
+                : "text-orange-900/70 hover:bg-white hover:border-orange-200 border-transparent"
+                } ${isCollapsed ? 'justify-center' : ''}`}
               title={isCollapsed ? item.name : undefined}
             >
               <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-primary" : "text-orange-300"}`} />
@@ -111,7 +102,7 @@ export function Header() {
     } catch (e) {
       // ignore
     }
-    try { sessionStorage.removeItem('hedis_token'); } catch {}
+    try { sessionStorage.removeItem('hedis_token'); } catch { }
     setUser(null);
     router.push('/login');
   }
@@ -119,36 +110,20 @@ export function Header() {
   return (
     <header className="h-20 border-b border-orange-200/60 bg-white flex items-center justify-between px-6 shadow-sm z-10 relative">
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center">
-          <Image
-            src="/download.png"
-            alt="HEDIS Logo"
-            width={24}
-            height={24}
-            className="w-[24px] h-[24px] object-contain"
-          />
-        </div>
         <div className="flex flex-col">
-          <span className="font-bold text-orange-950 text-[15px]">HEDIS.Ai Assistant</span>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-600 mt-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+          <span className="font-bold text-slate-900 text-l">HEDIS.Ai Assistant</span>
+          <div className="flex items-center gap-2 text-xs font-bold tracking-wide text-emerald-600 mt-1">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
             AVAILABLE — READY TO ASSIST
           </div>
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="outline" className="hidden sm:flex bg-orange-50/50 text-orange-950 font-semibold text-xs border-orange-200 shadow-sm h-9 hover:bg-orange-100">
-          <Activity className="w-3.5 h-3.5 mr-2 text-primary" /> Structured Insights
-        </Button>
-        {user ? (
+        {user && (
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline text-sm font-semibold">{user.name}</span>
             <Button onClick={handleLogout} className="text-sm h-9">Logout</Button>
           </div>
-        ) : (
-          <Link href="/login">
-            <Button className="text-sm h-9">Sign In</Button>
-          </Link>
         )}
       </div>
     </header>

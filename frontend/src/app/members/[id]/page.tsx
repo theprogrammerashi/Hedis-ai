@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMember, generateEmail, sendEmail, fetchOutreachLog } from "@/lib/api";
+import { fetchMember, generateEmail, sendEmail, fetchOutreachLog, saveEmailDraft, deleteOutreachLog } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { User, Activity, MapPin, Mail, Sparkles, Send, Stethoscope, FileText, Smartphone, MessageSquare } from "lucide-react";
+import { User, Activity, MapPin, Mail, Sparkles, Send, Stethoscope, FileText, Smartphone, MessageSquare, Trash2, Save } from "lucide-react";
 
 export default function Member360() {
   const { id } = useParams();
@@ -21,7 +21,13 @@ export default function Member360() {
   
   const loadLogs = (profileId: string) => {
     fetchOutreachLog().then((allLogs) => {
-      setLogs(allLogs.filter((log: any) => log.member_id === profileId));
+      const memberLogs = allLogs.filter((log: any) => log.member_id === profileId);
+      setLogs(memberLogs);
+      
+      const draft = memberLogs.find((l: any) => l.status === 'Draft' && l.channel === 'Email');
+      if (draft && !emailContent) {
+        setEmailContent(draft.content);
+      }
     });
   };
 
@@ -41,11 +47,33 @@ export default function Member360() {
     try {
       const res = await generateEmail(member.id_normalized);
       setEmailContent(res.content);
-      toast("AI Email Draft Generated");
+      await saveEmailDraft(member.id_normalized, res.content, member.primary_language);
+      toast("AI Email Generated & Saved as Draft");
+      loadLogs(member.profile_member_id);
     } catch (e) {
       toast("Error generating email");
     }
     setGenerating(false);
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      await saveEmailDraft(member.id_normalized, emailContent, member.primary_language);
+      toast("Draft updated successfully");
+      loadLogs(member.profile_member_id);
+    } catch(e) {
+      toast("Failed to update draft");
+    }
+  };
+
+  const handleDeleteLog = async (logId: number) => {
+    try {
+      await deleteOutreachLog(logId);
+      toast("Log deleted");
+      loadLogs(member.profile_member_id);
+    } catch(e) {
+      toast("Failed to delete log");
+    }
   };
 
   const handleSendEmail = async () => {
@@ -62,7 +90,7 @@ export default function Member360() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-orange-800">Patient 360: {member.member_name}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Patient 360: {member.member_name}</h1>
         <Badge variant={member.priority === 'CRITICAL' ? 'destructive' : member.priority === 'HIGH' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
           {member.priority} PRIORITY
         </Badge>
@@ -72,33 +100,33 @@ export default function Member360() {
         {/* Left: Demographics & SDOH */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-orange-600"/> Demographics & SDOH</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-slate-600"/> Demographics & SDOH</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-y-3 text-sm">
-              <div className="text-orange-500">Member ID</div><div className="font-medium">{member.profile_member_id}</div>
-              <div className="text-orange-500">Gender</div><div className="font-medium">{member.gender}</div>
-              <div className="text-orange-500">Language</div><div className="font-medium text-orange-600">{member.primary_language}</div>
-              <div className="text-orange-500">Address</div><div className="font-medium">{member.address}</div>
+              <div className="text-slate-500">Member ID</div><div className="font-medium">{member.profile_member_id}</div>
+              <div className="text-slate-500">Gender</div><div className="font-medium">{member.gender}</div>
+              <div className="text-slate-500">Language</div><div className="font-medium text-slate-700">{member.primary_language}</div>
+              <div className="text-slate-500">Address</div><div className="font-medium">{member.address}</div>
             </div>
-            <hr className="border-orange-100" />
+            <hr className="border-slate-100" />
             <div>
-              <h4 className="text-sm font-semibold text-orange-700 mb-3">SDOH Profile</h4>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3">SDOH Profile</h4>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-orange-500">Income Level</span>
+                  <span className="text-slate-500">Income Level</span>
                   <Badge variant="outline">{member.income}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-orange-500">Transportation</span>
+                  <span className="text-slate-500">Transportation</span>
                   <Badge variant={member.transportation_access === 'N' ? 'destructive' : 'outline'}>{member.transportation_access === 'Y' ? 'Yes' : 'No Access'}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-orange-500">Housing</span>
+                  <span className="text-slate-500">Housing</span>
                   <Badge variant={member.housing_status === 'N' ? 'destructive' : 'outline'}>{member.housing_status === 'Y' ? 'Stable' : 'Unstable'}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-orange-500">Provider Dist.</span>
+                  <span className="text-slate-500">Provider Dist.</span>
                   <Badge variant="outline">{member.provider_access}</Badge>
                 </div>
               </div>
@@ -107,39 +135,39 @@ export default function Member360() {
         </Card>
 
         {/* Center: HEDIS Measure */}
-        <Card className="shadow-sm border-t-4 border-t-orange-500">
+        <Card className="shadow-sm border-t-4 border-t-[#F37021]">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-orange-600"/> Care Gap Details</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-slate-600"/> Care Gap Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="text-sm text-orange-500 mb-1">Measure Flagged</div>
-              <div className="text-xl font-bold text-orange-800">{member.measure}</div>
-              <div className="text-sm text-orange-600 mt-1">{member.measure_description}</div>
+              <div className="text-sm text-slate-500 mb-1">Measure Flagged</div>
+              <div className="text-xl font-bold text-slate-900">{member.measure}</div>
+              <div className="text-sm text-slate-600 mt-1">{member.measure_description}</div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="bg-orange-50 p-3 rounded-md">
-                <div className="text-xs text-orange-500 uppercase tracking-wider mb-1">Status</div>
+              <div className="bg-slate-50 p-3 rounded-md">
+                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</div>
                 {member.compliant === "NO" ? (
                   <span className="text-red-600 font-semibold">Open Gap</span>
                 ) : (
                   <span className="text-green-600 font-semibold">Compliant</span>
                 )}
               </div>
-              <div className="bg-orange-50 p-3 rounded-md">
-                <div className="text-xs text-orange-500 uppercase tracking-wider mb-1">Follow-up</div>
+              <div className="bg-slate-50 p-3 rounded-md">
+                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Follow-up</div>
                 {member.follow_up === "N" ? (
                   <span className="text-amber-600 font-semibold">Pending</span>
                 ) : (
-                  <span className="text-orange-700 font-semibold">Done</span>
+                  <span className="text-slate-700 font-semibold">Done</span>
                 )}
               </div>
             </div>
 
             <div className="pt-2">
-              <div className="text-sm font-semibold text-orange-700 mb-2">Recommended Action</div>
-              <div className="text-sm bg-orange-50 text-blue-800 p-3 rounded border border-blue-100">
+              <div className="text-sm font-semibold text-slate-700 mb-2">Recommended Action</div>
+              <div className="text-sm bg-blue-50 text-blue-800 p-3 rounded border border-blue-100">
                 {member.gap_closure}
               </div>
             </div>
@@ -149,10 +177,10 @@ export default function Member360() {
         {/* Right: Medical History */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><Stethoscope className="w-5 h-5 text-orange-600"/> Medical History</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2"><Stethoscope className="w-5 h-5 text-slate-600"/> Medical History</CardTitle>
           </CardHeader>
           <CardContent>
-             <div className="text-sm text-orange-600">
+             <div className="text-sm text-slate-600">
                <p className="mb-2"><span className="font-medium">Last Claim Date:</span> {member.last_claim_date ? new Date(member.last_claim_date).toLocaleDateString() : 'N/A'}</p>
                <p className="mb-4"><span className="font-medium">Action Plan:</span> {member.next_plan_of_action || 'None'}</p>
              </div>
@@ -161,11 +189,11 @@ export default function Member360() {
       </div>
 
       {/* AI Email Generation Section */}
-      <Card className="shadow-sm border-orange-200 overflow-hidden">
-        <CardHeader className="bg-white border-b border-orange-100 flex flex-row items-center justify-between py-4">
+      <Card className="shadow-sm border-slate-200 overflow-hidden">
+        <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
-            <CardTitle className="text-orange-800 font-semibold text-lg m-0">AI Outreach Assistant</CardTitle>
+            <CardTitle className="text-slate-900 font-semibold text-lg m-0">AI Outreach Assistant</CardTitle>
           </div>
           <Badge className="bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100 flex items-center gap-1.5 px-3 py-1 shadow-sm">
              <Sparkles className="w-3.5 h-3.5" /> Claude Sonnet
@@ -173,33 +201,36 @@ export default function Member360() {
         </CardHeader>
         <CardContent className="p-6 bg-white">
           {!emailContent && !generating ? (
-             <div className="border-2 border-dashed border-orange-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-orange-50/50">
-               <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+             <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50/50">
+               <div className="w-12 h-12 bg-white text-slate-600 rounded-xl flex items-center justify-center mb-4 shadow-sm border border-slate-200">
                  <Mail className="w-6 h-6" />
                </div>
-               <h4 className="font-semibold text-orange-800 text-base mb-2">Generate Personalized Email</h4>
-               <p className="text-orange-500 mb-6 text-sm">Click to create a context-aware outreach email in <span className="font-medium text-orange-700">{member.primary_language}</span>.</p>
-               <Button onClick={handleGenerate} disabled={generating} className="bg-orange-600 hover:bg-blue-700 text-white flex items-center gap-2 px-6 py-5 rounded-xl shadow-md transition-all">
+               <h4 className="font-semibold text-slate-800 text-base mb-2">Generate Personalized Email</h4>
+               <p className="text-slate-500 mb-6 text-sm">Click to create a context-aware outreach email in <span className="font-medium text-slate-700">{member.primary_language}</span>.</p>
+               <Button onClick={handleGenerate} disabled={generating} className="bg-[#F37021] hover:bg-[#d9611c] disabled:bg-[#F37021]/50 disabled:opacity-100 text-white flex items-center gap-2 px-6 py-5 rounded-xl shadow-md transition-all">
                  <Sparkles className="w-4 h-4" /> Generate Email
                </Button>
              </div>
           ) : generating ? (
-            <div className="border border-orange-200 rounded-2xl p-8 flex flex-col space-y-4">
-              <div className="animate-pulse h-4 bg-orange-200 rounded w-3/4"></div>
-              <div className="animate-pulse h-4 bg-orange-200 rounded w-1/2"></div>
-              <div className="animate-pulse h-4 bg-orange-200 rounded w-5/6"></div>
+            <div className="border border-slate-200 rounded-2xl p-8 flex flex-col space-y-4">
+              <div className="animate-pulse h-4 bg-slate-200 rounded w-3/4"></div>
+              <div className="animate-pulse h-4 bg-slate-200 rounded w-1/2"></div>
+              <div className="animate-pulse h-4 bg-slate-200 rounded w-5/6"></div>
             </div>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm">
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                 <Textarea 
                   value={emailContent} 
                   onChange={(e) => setEmailContent(e.target.value)}
-                  className="min-h-[200px] border-none focus-visible:ring-0 resize-none text-orange-700 leading-relaxed"
+                  className="min-h-[200px] border-none focus-visible:ring-0 resize-none text-slate-700 leading-relaxed"
                 />
               </div>
               <div className="flex justify-center gap-3">
                 <Button variant="outline" onClick={() => setEmailContent("")} className="px-6 py-5 rounded-xl">Discard</Button>
+                <Button variant="secondary" onClick={handleSaveDraft} className="px-6 py-5 rounded-xl flex items-center gap-2">
+                  <Save className="w-4 h-4" /> Save Draft
+                </Button>
                 <Button onClick={handleSendEmail} className="bg-green-600 hover:bg-green-700 px-6 py-5 rounded-xl flex items-center gap-2">
                   <Send className="w-4 h-4" /> Send Email
                 </Button>
@@ -210,28 +241,33 @@ export default function Member360() {
       </Card>
 
       {/* Communication Log Section */}
-      <Card className="shadow-sm border-orange-200">
-        <CardHeader className="bg-white border-b border-orange-100 flex flex-row items-center justify-between py-4">
-          <CardTitle className="text-orange-800 font-semibold text-lg m-0">Communication Log</CardTitle>
-          <Badge variant="secondary" className="bg-orange-100 text-orange-600 border border-orange-200 font-medium px-3 py-1">
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between py-4">
+          <CardTitle className="text-slate-900 font-semibold text-lg m-0">Communication Log</CardTitle>
+          <Badge variant="secondary" className="bg-slate-100 text-slate-600 border border-slate-200 font-medium px-3 py-1">
             {logs.length} records
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y divide-orange-100 flex flex-col">
+          <div className="divide-y divide-slate-100 flex flex-col">
             {logs.map((log: any, idx: number) => (
-              <div key={idx} className="p-6 flex items-start gap-4 hover:bg-orange-50/50 transition-colors">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${log.channel === 'SMS' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-blue-100'}`}>
+              <div key={idx} className="p-6 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${log.channel === 'SMS' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                   {log.channel === 'SMS' ? <MessageSquare className="w-5 h-5" /> : <Mail className="w-5 h-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                   <h5 className="text-orange-800 font-semibold mb-1 text-sm">{log.channel} — {log.language}</h5>
-                   <p className="text-orange-500 text-sm mb-3 truncate max-w-2xl">{log.content}</p>
+                   <div className="flex items-center justify-between mb-1">
+                     <h5 className="text-slate-800 font-semibold text-sm">{log.channel} — {log.language}</h5>
+                     <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeleteLog(log.id)}>
+                       <Trash2 className="w-4 h-4" />
+                     </Button>
+                   </div>
+                   <p className="text-slate-500 text-sm mb-3 truncate max-w-2xl">{log.content}</p>
                    <div className="flex items-center gap-3">
                      <Badge className={log.status === 'Sent' ? 'bg-green-100 text-green-700 hover:bg-green-100 shadow-none border-none font-medium' : 'bg-amber-100 text-amber-700 hover:bg-amber-100 shadow-none border-none font-medium'}>
                        {log.status}
                      </Badge>
-                     <span className="text-xs text-orange-400 font-medium tracking-wide">
+                     <span className="text-xs text-slate-400 font-medium tracking-wide">
                        {new Date(log.created_at).toLocaleDateString()} {', '}
                        {new Date(log.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                      </span>
@@ -240,8 +276,8 @@ export default function Member360() {
               </div>
             ))}
             {logs.length === 0 && (
-              <div className="p-10 text-center flex flex-col items-center text-orange-500">
-                <FileText className="w-10 h-10 text-orange-300 mb-3" />
+              <div className="p-10 text-center flex flex-col items-center text-slate-500">
+                <FileText className="w-10 h-10 text-slate-300 mb-3" />
                 <p>No communication history found for this member.</p>
               </div>
             )}

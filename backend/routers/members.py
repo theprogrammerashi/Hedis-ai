@@ -11,8 +11,10 @@ def get_members(
     measure: Optional[str] = None,
     compliant: Optional[str] = None,
     language: Optional[str] = None,
+    language_not_english: Optional[str] = None,
     follow_up: Optional[str] = None,
     housing: Optional[str] = None,
+    transportation: Optional[str] = None,
     page: int = 1,
     limit: int = 50
 ):
@@ -33,12 +35,17 @@ def get_members(
     if language:
         query += " AND primary_language = ?"
         params.append(language)
+    if language_not_english == 'true':
+        query += " AND primary_language != 'English'"
     if follow_up:
         query += " AND follow_up = ?"
         params.append(follow_up)
     if housing:
         query += " AND housing_status = ?"
         params.append(housing)
+    if transportation:
+        query += " AND transportation_access = ?"
+        params.append(transportation)
         
     # Count total
     count_query = f"SELECT COUNT(*) FROM ({query})"
