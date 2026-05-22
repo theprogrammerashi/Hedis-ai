@@ -23,21 +23,21 @@ export default function Dashboard() {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading dashboard...</div>;
 
-  const COLORS = ['#2563EB', '#10B981', '#EF4444', '#F59E0B'];
+  const COLORS = ['#2563EB', '#10B981', '#F97316', '#8B5CF6'];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-red-50 to-white border-red-100">
+        <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-white border-orange-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold text-red-700">Critical Priority Alerts</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-bold text-slate-900">Critical Priority Alerts</CardTitle>
+            <AlertCircle className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-red-600">{kpis?.priority_alerts?.length || 0}</div>
-            <p className="text-xs text-red-600 mt-1 font-medium leading-tight">
+            <div className="text-3xl font-extrabold text-slate-900">{kpis?.priority_alerts?.length || 0}</div>
+            <p className="text-xs text-slate-600 mt-1 font-medium leading-tight">
               Gaps open, no follow-up,<br/>no transport.
             </p>
           </CardContent>
@@ -45,41 +45,41 @@ export default function Dashboard() {
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800">{kpis?.total_members}</div>
+            <div className="text-3xl font-bold text-slate-900">{kpis?.total_members}</div>
           </CardContent>
         </Card>
         
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Care Gaps Open</CardTitle>
-            <AlertCircle className="h-4 w-4 text-rose-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Care Gaps Open</CardTitle>
+            <AlertCircle className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800">{kpis?.care_gaps_open}</div>
+            <div className="text-3xl font-bold text-slate-900">{kpis?.care_gaps_open}</div>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Follow-Up Pending</CardTitle>
-            <PhoneMissed className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Follow-Up Pending</CardTitle>
+            <PhoneMissed className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800">{kpis?.follow_up_pending}</div>
+            <div className="text-3xl font-bold text-slate-900">{kpis?.follow_up_pending}</div>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">SMS Auto-Sent</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">SMS Auto-Sent</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800">{kpis?.sms_auto_sent}</div>
+            <div className="text-3xl font-bold text-slate-900">{kpis?.sms_auto_sent}</div>
           </CardContent>
         </Card>
       </div>
@@ -87,7 +87,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base text-slate-800">Members by Measure</CardTitle>
+            <CardTitle className="text-base text-slate-900">Members by Measure</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -115,7 +115,7 @@ export default function Dashboard() {
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-base text-slate-800">Compliance Rate by Measure (%)</CardTitle>
+            <CardTitle className="text-base text-slate-900">Compliance Rate by Measure (%)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -123,7 +123,7 @@ export default function Dashboard() {
                 <XAxis dataKey="measure" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="rate" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rate" fill="#F97316" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -131,13 +131,13 @@ export default function Dashboard() {
       </div>
 
       {/* Analytics & Insights Section */}
-      <div className="pt-6 border-t border-slate-100 mt-8">
+      <div className="pt-6 border-t border-slate-200 mt-8">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Analytics & Insights</h2>
+            <h2 className="text-xl font-bold text-slate-900">Analytics & Insights</h2>
             <p className="text-slate-500 text-sm mt-1">SDOH breakdown, outreach effectiveness, and care gap trends</p>
           </div>
-          <Button variant="outline" className="bg-white border-slate-200 text-slate-700 shadow-sm flex items-center gap-2 font-medium">
+          <Button variant="outline" className="bg-white border-slate-200 text-slate-900 shadow-sm flex items-center gap-2 font-medium">
             <Download className="w-4 h-4" /> Export Report
           </Button>
         </div>
@@ -146,12 +146,12 @@ export default function Dashboard() {
           {/* Language Distribution */}
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-slate-800">Language Distribution</CardTitle>
+              <CardTitle className="text-base font-semibold text-slate-900">Language Distribution</CardTitle>
               <p className="text-sm text-slate-500">Primary language of enrolled members</p>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               {charts?.language_distribution?.map((item: any, idx: number) => {
-                const colors = ['bg-blue-600', 'bg-emerald-600', 'bg-amber-600', 'bg-red-600', 'bg-purple-600'];
+                const colors = ['bg-sky-500', 'bg-emerald-600', 'bg-amber-500', 'bg-violet-600', 'bg-slate-500'];
                 const color = colors[idx % colors.length];
                 const maxCount = Math.max(...(charts?.language_distribution?.map((i: any) => i.count) || [1]));
                 const width = `${Math.max((item.count / maxCount) * 100, 2)}%`;
@@ -160,11 +160,11 @@ export default function Dashboard() {
                   <div key={idx} className="flex items-center text-sm">
                     <div className="w-24 text-slate-600 truncate">{item.language}</div>
                     <div className="flex-1 flex items-center">
-                      <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative">
+                      <div className="w-full bg-orange-100 rounded-full h-3 overflow-hidden relative">
                         <div className={`h-full rounded-full ${color}`} style={{ width }} />
                       </div>
                     </div>
-                    <div className="w-8 text-right font-bold text-slate-800">{item.count}</div>
+                    <div className="w-8 text-right font-bold text-slate-900">{item.count}</div>
                   </div>
                 );
               })}
@@ -174,12 +174,12 @@ export default function Dashboard() {
           {/* SDOH Risk Factors */}
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-slate-800">SDOH Risk Factors</CardTitle>
+              <CardTitle className="text-base font-semibold text-slate-900">SDOH Risk Factors</CardTitle>
               <p className="text-sm text-slate-500">Social determinants affecting care access</p>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               {charts?.sdoh_factors?.map((item: any, idx: number) => {
-                const colors = ['bg-red-600', 'bg-amber-600', 'bg-purple-600', 'bg-emerald-600'];
+                const colors = ['bg-sky-500', 'bg-amber-500', 'bg-violet-600', 'bg-emerald-600'];
                 const color = colors[idx % colors.length];
                 const maxCount = Math.max(...(charts?.sdoh_factors?.map((i: any) => i.count) || [1]));
                 const width = `${Math.max((item.count / maxCount) * 100, 2)}%`;
@@ -188,11 +188,11 @@ export default function Dashboard() {
                   <div key={idx} className="flex items-center text-sm">
                     <div className="w-24 text-slate-600 truncate pr-2 leading-tight">{item.factor}</div>
                     <div className="flex-1 flex items-center">
-                      <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative">
+                      <div className="w-full bg-orange-100 rounded-full h-3 overflow-hidden relative">
                         <div className={`h-full rounded-full ${color}`} style={{ width }} />
                       </div>
                     </div>
-                    <div className="w-8 text-right font-bold text-slate-800">{item.count}</div>
+                    <div className="w-8 text-right font-bold text-slate-900">{item.count}</div>
                   </div>
                 );
               })}
@@ -203,7 +203,7 @@ export default function Dashboard() {
         {/* Outreach Effectiveness */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-800">Outreach Effectiveness</CardTitle>
+            <CardTitle className="text-base font-semibold text-slate-900">Outreach Effectiveness</CardTitle>
             <p className="text-sm text-slate-500">Simulated monthly care gap closure trend</p>
           </CardHeader>
           <CardContent className="pt-8 pb-4">
@@ -212,7 +212,7 @@ export default function Dashboard() {
                 const maxVal = 100;
                 const height = `${(item.value / maxVal) * 100}%`;
                 // Generate progressively darker blue colors
-                const opacities = ['bg-blue-200', 'bg-blue-300', 'bg-blue-400', 'bg-blue-600', 'bg-blue-700'];
+                const opacities = ['bg-slate-100', 'bg-slate-200', 'bg-slate-300', 'bg-slate-400', 'bg-slate-500'];
                 const bgColor = opacities[idx % opacities.length];
                 
                 return (

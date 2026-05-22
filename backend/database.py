@@ -85,6 +85,32 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """)
+    # Ensure users and sessions tables exist for auth (best-effort)
+    try:
+        conn.execute("CREATE SEQUENCE IF NOT EXISTS user_seq START 1")
+        conn.execute("CREATE SEQUENCE IF NOT EXISTS session_seq START 1")
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER DEFAULT nextval('user_seq') PRIMARY KEY,
+            email VARCHAR UNIQUE,
+            name VARCHAR,
+            password_hash VARCHAR,
+            salt VARCHAR,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER DEFAULT nextval('session_seq') PRIMARY KEY,
+            user_id INTEGER,
+            session_token VARCHAR UNIQUE,
+            expires_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    except Exception:
+        pass
+
     return conn
 
 def get_db():

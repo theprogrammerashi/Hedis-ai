@@ -6,18 +6,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Car, Home, Languages, Eye } from "lucide-react";
+import { Car, Home, Languages, Eye, Search } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 function MembersList() {
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get("search");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchQuery = searchParams.get("search") || "";
   
+  const [searchInput, setSearchInput] = useState(searchQuery);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterMeasure, setFilterMeasure] = useState("ALL");
   const [filterGap, setFilterGap] = useState("ALL");
+
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
 
   const loadMembers = () => {
     setLoading(true);
@@ -36,23 +43,47 @@ function MembersList() {
     loadMembers();
   }, [filterMeasure, filterGap, searchQuery]);
 
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchInput.trim()) {
+        params.set("search", searchInput.trim());
+      } else {
+        params.delete("search");
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    }
+  };
+
   const getRowColor = (gap: string, followup: string) => {
     if (gap === "YES") return "bg-green-50/50 hover:bg-green-50 transition-colors";
     if (gap === "NO" && followup === "N") return "bg-red-50/50 hover:bg-red-50 transition-colors";
     if (gap === "NO" && followup === "Y") return "bg-amber-50/50 hover:bg-amber-50 transition-colors";
-    return "transition-colors hover:bg-slate-50";
+    return "transition-colors hover:bg-orange-50";
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Members Directory</h1>
-          {searchQuery && <p className="text-sm text-slate-500 mt-1">Showing results for: <span className="font-medium text-blue-600">"{searchQuery}"</span></p>}
+          <h1 className="text-2xl font-bold text-orange-800">Members Directory</h1>
+          {searchQuery && <p className="text-sm text-orange-500 mt-1">Showing results for: <span className="font-medium text-orange-600">"{searchQuery}"</span></p>}
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center bg-white border border-orange-200 rounded-md px-3 py-2 w-72 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all duration-200 shadow-sm">
+            <Search className="w-4 h-4 text-orange-400 mr-2 shrink-0" />
+            <input 
+              type="text" 
+              placeholder="Search members by ID or Name..." 
+              className="bg-transparent border-none outline-none text-sm w-full text-orange-700 placeholder-orange-400"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleSearch}
+            />
+          </div>
+
           <Select value={filterMeasure} onValueChange={(val) => setFilterMeasure(val!)}>
-            <SelectTrigger className="w-[180px] bg-white shadow-sm border-slate-200">
+            <SelectTrigger className="w-[160px] bg-white shadow-sm border-orange-200 h-[38px]">
               <SelectValue placeholder="Measure">
                 {filterMeasure === 'ALL' ? 'All Measures' : filterMeasure}
               </SelectValue>
@@ -66,7 +97,7 @@ function MembersList() {
           </Select>
           
           <Select value={filterGap} onValueChange={(val) => setFilterGap(val!)}>
-            <SelectTrigger className="w-[180px] bg-white shadow-sm border-slate-200">
+            <SelectTrigger className="w-[160px] bg-white shadow-sm border-orange-200 h-[38px]">
               <SelectValue placeholder="Gap Status">
                 {filterGap === 'ALL' ? 'All Status' : filterGap === 'NO' ? 'Gap Open' : 'Compliant'}
               </SelectValue>
@@ -80,28 +111,28 @@ function MembersList() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-slate-50/80 backdrop-blur-sm">
-            <TableRow className="border-b border-slate-200">
-              <TableHead className="font-semibold text-slate-700 h-12">Member ID</TableHead>
-              <TableHead className="font-semibold text-slate-700 h-12">Name</TableHead>
-              <TableHead className="font-semibold text-slate-700 h-12">Measure</TableHead>
-              <TableHead className="font-semibold text-slate-700 h-12">Gap Status</TableHead>
-              <TableHead className="font-semibold text-slate-700 h-12">Follow-Up</TableHead>
-              <TableHead className="font-semibold text-slate-700 h-12">SDOH Profile</TableHead>
-              <TableHead className="text-right font-semibold text-slate-700 h-12">Actions</TableHead>
+          <TableHeader className="bg-orange-50/80 backdrop-blur-sm">
+            <TableRow className="border-b border-orange-200">
+              <TableHead className="font-semibold text-orange-700 h-12">Member ID</TableHead>
+              <TableHead className="font-semibold text-orange-700 h-12">Name</TableHead>
+              <TableHead className="font-semibold text-orange-700 h-12">Measure</TableHead>
+              <TableHead className="font-semibold text-orange-700 h-12">Gap Status</TableHead>
+              <TableHead className="font-semibold text-orange-700 h-12">Follow-Up</TableHead>
+              <TableHead className="font-semibold text-orange-700 h-12">SDOH Profile</TableHead>
+              <TableHead className="text-right font-semibold text-orange-700 h-12">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-500 font-medium">Loading directory...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-12 text-orange-500 font-medium">Loading directory...</TableCell></TableRow>
             ) : members.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-500">No members found matching your criteria.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-12 text-orange-500">No members found matching your criteria.</TableCell></TableRow>
             ) : members.map((m: any, idx: number) => (
               <TableRow key={`${m.id_normalized}-${m.measure}-${idx}`} className={getRowColor(m.compliant, m.follow_up)}>
-                <TableCell className="font-semibold text-slate-900">{m.profile_member_id}</TableCell>
-                <TableCell className="font-medium text-slate-700">{m.member_name}</TableCell>
+                <TableCell className="font-semibold text-orange-900">{m.profile_member_id}</TableCell>
+                <TableCell className="font-medium text-orange-700">{m.member_name}</TableCell>
                 <TableCell><Badge variant="outline" className="bg-white">{m.measure}</Badge></TableCell>
                 <TableCell>
                   {m.compliant === "NO" ? (
@@ -112,27 +143,27 @@ function MembersList() {
                 </TableCell>
                 <TableCell>
                   {m.follow_up === "Y" ? (
-                    <Badge variant="outline" className="text-slate-600 border-slate-300 bg-white shadow-sm">Done</Badge>
+                    <Badge variant="outline" className="text-orange-600 border-orange-300 bg-white shadow-sm">Done</Badge>
                   ) : (
                     <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 shadow-sm">Pending</Badge>
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2.5 text-slate-400">
+                  <div className="flex gap-2.5 text-orange-400">
                     <span title={`Transport: ${m.transportation_access}`} className={m.transportation_access === 'N' ? 'text-red-500 animate-pulse' : ''}>
                       <Car className="w-[18px] h-[18px]" />
                     </span>
                     <span title={`Housing: ${m.housing_status}`} className={m.housing_status === 'N' ? 'text-red-500 animate-pulse' : ''}>
                       <Home className="w-[18px] h-[18px]" />
                     </span>
-                    <span title={`Language: ${m.primary_language}`} className={m.primary_language !== 'English' ? 'text-blue-500' : ''}>
+                    <span title={`Language: ${m.primary_language}`} className={m.primary_language !== 'English' ? 'text-orange-500' : ''}>
                       <Languages className="w-[18px] h-[18px]" />
                     </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <Link href={`/members/${m.id_normalized}`}>
-                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 font-medium">
+                    <Button variant="ghost" size="sm" className="text-orange-600 hover:text-blue-800 hover:bg-orange-50 font-medium">
                       <Eye className="w-4 h-4 mr-2" /> View 360
                     </Button>
                   </Link>
@@ -148,7 +179,7 @@ function MembersList() {
 
 export default function Members() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading Members...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-orange-500">Loading Members...</div>}>
       <MembersList />
     </Suspense>
   );

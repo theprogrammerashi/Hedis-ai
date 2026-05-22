@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Send, Bell, Search, Activity, ChevronLeft, Menu } from "lucide-react";
-import { useState } from "react";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, Send, Plus, Settings, ChevronLeft, Menu, Home, Activity } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Button } from "./ui/button";
+import { getCurrentUser, logout } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -16,36 +20,74 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`flex h-screen flex-col bg-white border-r border-slate-200 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
-      <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200 overflow-visible relative">
-        <div className="flex items-center overflow-visible whitespace-nowrap min-w-max">
-          <Activity className="w-6 h-6 text-blue-600 mr-2 flex-shrink-0" />
-          <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-xl tracking-tight">HEDIS.Ai</span>
+    <div className={`flex h-screen flex-col bg-[var(--sidebar)] border-r border-orange-200/60 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+      
+      {/* Header / Logo Block */}
+      <div className="flex items-center gap-3 h-20 px-4 overflow-visible relative mt-2">
+        <div className="w-11 h-11 flex items-center justify-center text-white font-bold text-sm shrink-0">
+          <Image
+            src="/download.png"
+            alt="HEDIS Logo"
+            width={44}
+            height={44}
+            className="w-full h-full object-contain"
+          />
         </div>
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-5 p-1 bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full flex-shrink-0 shadow-sm z-50 transition-colors">
+        {!isCollapsed && (
+          <div className="flex flex-col">
+            <span className="font-bold text-orange-950 leading-tight">HEDIS.Ai</span>
+            <span className="text-[11px] text-orange-800/70 font-medium">Healthcare Intelligence</span>
+          </div>
+        )}
+        <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-6 p-1 bg-white border border-orange-200 text-orange-400 hover:text-primary hover:bg-orange-50 rounded-full flex-shrink-0 shadow-sm z-50 transition-colors">
           {isCollapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
+
+      {/* Main Call to Action */}
+      <div className="px-4 py-2 mb-2">
+        <button className={`w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl py-3 text-sm font-semibold shadow-sm transition-colors ${isCollapsed ? 'px-0' : 'px-4'}`}>
+          <Plus className="w-[18px] h-[18px]" />
+          {!isCollapsed && <span>New Campaign</span>}
+        </button>
+      </div>
       
-      <div className="flex-1 py-6 flex flex-col gap-2 px-3">
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 px-3 pt-2">
+        {!isCollapsed && <div className="px-3 py-2 text-[11px] font-bold text-orange-400/80 tracking-widest uppercase">Navigation</div>}
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 border ${
                 isActive 
-                  ? "bg-blue-50 text-blue-700 shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-accent text-accent-foreground border-accent shadow-sm" 
+                  : "text-orange-900/70 hover:bg-white hover:border-orange-200 border-transparent"
               } ${isCollapsed ? 'justify-center' : ''}`}
               title={isCollapsed ? item.name : undefined}
             >
-              <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+              <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-primary" : "text-orange-300"}`} />
               {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
             </Link>
           );
         })}
+      </div>
+
+      {/* User Profile */}
+      <div className="p-4 border-t border-orange-200/60 mt-auto">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-orange-950 text-white flex items-center justify-center text-xs font-semibold">JD</div>
+            {!isCollapsed && <span className="text-sm font-semibold text-orange-950">User</span>}
+          </div>
+          {!isCollapsed && (
+            <button className="text-orange-400 hover:text-primary p-1 transition-colors">
+              <Settings className="w-[18px] h-[18px]" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -53,35 +95,61 @@ export function Sidebar() {
 
 export function Header() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      router.push(`/members?search=${encodeURIComponent(searchQuery.trim())}`);
+  useEffect(() => {
+    let mounted = true;
+    getCurrentUser().then((u) => {
+      if (mounted) setUser(u);
+    }).catch(() => setUser(null));
+    return () => { mounted = false; };
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (e) {
+      // ignore
     }
-  };
+    try { sessionStorage.removeItem('hedis_token'); } catch {}
+    setUser(null);
+    router.push('/login');
+  }
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 shadow-sm z-10 relative">
-      <div className="flex items-center bg-slate-50 border border-slate-200 rounded-md px-3 py-2 w-96 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all duration-200">
-        <Search className="w-4 h-4 text-slate-400 mr-2" />
-        <input 
-          type="text" 
-          placeholder="Search members by ID or Name..." 
-          className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder-slate-400"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleSearch}
-        />
+    <header className="h-20 border-b border-orange-200/60 bg-white flex items-center justify-between px-6 shadow-sm z-10 relative">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
+          <Image
+            src="/download.png"
+            alt="HEDIS Logo"
+            width={24}
+            height={24}
+            className="w-[24px] h-[24px] object-contain"
+          />
+        </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-orange-950 text-[15px]">HEDIS.Ai Assistant</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-600 mt-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+            AVAILABLE — READY TO ASSIST
+          </div>
+        </div>
       </div>
       <div className="flex items-center gap-4">
-        <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-        </button>
-        <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-full text-white flex items-center justify-center text-sm font-semibold shadow-md">
-          JD
-        </div>
+        <Button variant="outline" className="hidden sm:flex bg-orange-50/50 text-orange-950 font-semibold text-xs border-orange-200 shadow-sm h-9 hover:bg-orange-100">
+          <Activity className="w-3.5 h-3.5 mr-2 text-primary" /> Structured Insights
+        </Button>
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline text-sm font-semibold">{user.name}</span>
+            <Button onClick={handleLogout} className="text-sm h-9">Logout</Button>
+          </div>
+        ) : (
+          <Link href="/login">
+            <Button className="text-sm h-9">Sign In</Button>
+          </Link>
+        )}
       </div>
     </header>
   );
