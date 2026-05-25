@@ -33,6 +33,7 @@ def send_email(req: EmailSendRequest):
     profile_id = res[2] if res else f"M{str(req.member_id).zfill(3)}"
         
     # Log to outreach_log
+    conn.execute("DELETE FROM outreach_log WHERE member_id = ? AND status = 'Draft'", [profile_id])
     conn.execute("""
         INSERT INTO outreach_log (member_id, channel, language, content, status)
         VALUES (?, 'Email', ?, ?, 'Sent')
@@ -65,6 +66,26 @@ def clear_outreach_log():
     conn = get_db()
     conn.execute("DELETE FROM outreach_log")
     return {"status": "success", "message": "Log cleared"}
+
+@router.post("/log/draft")
+def save_draft(req: EmailSendRequest):
+    conn = get_db()
+    res = conn.execute("SELECT profile_member_id FROM patient_360 WHERE id_normalized = ? LIMIT 1", [req.member_id]).fetchone()
+    profile_id = res[0] if res else f"M{str(req.member_id).zfill(3)}"
+    
+    conn.execute("DELETE FROM outreach_log WHERE member_id = ? AND status = 'Draft'", [profile_id])
+    
+    conn.execute("""
+        INSERT INTO outreach_log (member_id, channel, language, content, status)
+        VALUES (?, 'Email', ?, ?, 'Draft')
+    """, [profile_id, req.language, req.content])
+    return {"status": "success"}
+
+@router.delete("/log/{log_id}")
+def delete_log(log_id: int):
+    conn = get_db()
+    conn.execute("DELETE FROM outreach_log WHERE id = ?", [log_id])
+    return {"status": "success"}
 
 @router.post("/bulk")
 def bulk_outreach(req: BulkOutreachRequest):

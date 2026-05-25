@@ -10,7 +10,7 @@ def get_kpis():
     total_members = conn.execute("SELECT COUNT(DISTINCT profile_member_id) FROM patient_360").fetchone()[0]
     care_gaps_open = conn.execute("SELECT COUNT(*) FROM patient_360 WHERE compliant = 'NO'").fetchone()[0]
     follow_up_pending = conn.execute("SELECT COUNT(*) FROM patient_360 WHERE follow_up = 'N'").fetchone()[0]
-    sms_auto_sent = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE channel = 'SMS' AND status = 'Sent'").fetchone()[0]
+    total_emails_sent = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE channel = 'Email'").fetchone()[0]
     
     # Priority alert members (critical)
     priority_alerts = conn.execute("""
@@ -25,7 +25,7 @@ def get_kpis():
         "total_members": total_members,
         "care_gaps_open": care_gaps_open,
         "follow_up_pending": follow_up_pending,
-        "sms_auto_sent": sms_auto_sent,
+        "total_emails_sent": total_emails_sent,
         "priority_alerts": alerts
     }
 

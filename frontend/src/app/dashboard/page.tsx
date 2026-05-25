@@ -1,17 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchKPIs, fetchCharts } from "@/lib/api";
+import { fetchKPIs, fetchCharts, fetchMembers, fetchOutreachLog } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, AlertCircle, PhoneMissed, CheckCircle2, Download } from "lucide-react";
+import { Users, AlertCircle, PhoneMissed, Mail, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
   const [kpis, setKpis] = useState<any>(null);
   const [charts, setCharts] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  const router = useRouter();
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const [dialogMembers, setDialogMembers] = useState<any[]>([]);
+  const [dialogLoading, setDialogLoading] = useState(false);
+
+  const openMetricDialog = async (metric: string) => {
+    setSelectedMetric(metric);
+    setDialogLoading(true);
+    try {
+      if (metric === 'emails') {
+        const logs = await fetchOutreachLog();
+        setDialogMembers(logs.filter((l: any) => l.channel === 'Email'));
+      } else {
+        const res = await fetchMembers({ limit: 1000 });
+        const all = res.data || [];
+        if (metric === 'critical') setDialogMembers(all.filter((m: any) => m.priority === 'CRITICAL'));
+        else if (metric === 'gaps') setDialogMembers(all.filter((m: any) => m.compliant === 'NO'));
+        else if (metric === 'followup') setDialogMembers(all.filter((m: any) => m.follow_up === 'N'));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDialogLoading(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([fetchKPIs(), fetchCharts()]).then(([kpiData, chartData]) => {
@@ -30,10 +61,10 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-white border-orange-100">
+        <Card onClick={() => openMetricDialog('critical')} className="hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all bg-gradient-to-br from-red-50 to-white border-red-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold text-slate-900">Critical Priority Alerts</CardTitle>
-            <AlertCircle className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-bold text-red-900">Critical Priority Alerts</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-extrabold text-slate-900">{kpis?.priority_alerts?.length || 0}</div>
@@ -43,43 +74,43 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card onClick={() => router.push('/members')} className="hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all bg-gradient-to-br from-blue-50 to-white border-blue-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-bold text-blue-900">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{kpis?.total_members}</div>
+            <div className="text-3xl font-bold text-blue-900">{kpis?.total_members}</div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
+        <Card onClick={() => openMetricDialog('gaps')} className="hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all bg-gradient-to-br from-amber-50 to-white border-amber-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Care Gaps Open</CardTitle>
-            <AlertCircle className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-bold text-amber-900">Care Gaps Open</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{kpis?.care_gaps_open}</div>
+            <div className="text-3xl font-bold text-amber-900">{kpis?.care_gaps_open}</div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card onClick={() => openMetricDialog('followup')} className="hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all bg-gradient-to-br from-purple-50 to-white border-purple-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Follow-Up Pending</CardTitle>
-            <PhoneMissed className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-bold text-purple-900">Follow-Up Pending</CardTitle>
+            <PhoneMissed className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{kpis?.follow_up_pending}</div>
+            <div className="text-3xl font-bold text-purple-900">{kpis?.follow_up_pending}</div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card onClick={() => openMetricDialog('emails')} className="hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">SMS Auto-Sent</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-bold text-emerald-900">Total Emails Sent</CardTitle>
+            <Mail className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{kpis?.sms_auto_sent}</div>
+            <div className="text-3xl font-bold text-emerald-900">{kpis?.total_emails_sent || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -229,6 +260,95 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedMetric} onOpenChange={(val) => !val && setSelectedMetric(null)}>
+        <DialogContent className="bg-white p-6 rounded-2xl shadow-2xl" style={{ maxWidth: '900px', width: '90vw', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedMetric === 'critical' ? 'Critical Priority Alerts' :
+               selectedMetric === 'gaps' ? 'Care Gaps Open' :
+               selectedMetric === 'emails' ? 'Total Emails Sent' :
+               'Follow-Up Pending'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {dialogLoading ? (
+            <div className="p-8 text-center text-slate-500">Loading members...</div>
+          ) : (
+            <div className="mt-4 overflow-y-auto flex-1" style={{ maxHeight: 'calc(85vh - 120px)' }}>
+              <Table>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead>{selectedMetric === 'emails' ? 'Log Details' : 'Member'}</TableHead>
+                    <TableHead>{selectedMetric === 'emails' ? 'Channel' : 'Measure'}</TableHead>
+                    <TableHead>{selectedMetric === 'emails' ? 'Status' : 'Gap Status'}</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dialogMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                        No records found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    dialogMembers.map((m: any, idx: number) => (
+                      <TableRow key={idx}>
+                        {selectedMetric === 'emails' ? (
+                          <>
+                            <TableCell>
+                              <div className="font-medium text-slate-900">{m.member_id}</div>
+                              <div className="text-xs text-slate-500 truncate max-w-[200px]" title={m.content}>{m.content}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-white">{m.channel}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">{m.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Link href={`/outreach`}>
+                                <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 font-medium">
+                                  <Eye className="w-4 h-4 mr-2" /> View Outreach
+                                </Button>
+                              </Link>
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell>
+                              <div className="font-medium text-slate-900">{m.member_name}</div>
+                              <div className="text-xs text-slate-500">{m.profile_member_id}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-white">{m.measure}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {m.compliant === "NO" ? (
+                                <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-200 border-none font-medium shadow-sm">Gap Open</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200 border-none">Compliant</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Link href={`/members/${m.id_normalized}`}>
+                                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 font-medium">
+                                  <Eye className="w-4 h-4 mr-2" /> View 360
+                                </Button>
+                              </Link>
+                            </TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
