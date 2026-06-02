@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMembers, fetchOutreachLog, clearOutreachLog } from "@/lib/api";
+import { fetchMembers, fetchOutreachLog, clearOutreachLog, fetchOutreachAnalytics } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, ListFilter, Activity, Eye, Trash2 } from "lucide-react";
+import { Send, Activity, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Outreach() {
   const [members, setMembers] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [selectedLog, setSelectedLog] = useState<any>(null);
-  
+
   // Filters
   const [filterGap, setFilterGap] = useState("ALL");
   const [filterFollowup, setFilterFollowup] = useState("ALL");
@@ -32,6 +34,7 @@ export default function Outreach() {
     fetchMembers(params)
       .then(res => setMembers(res.data));
     fetchOutreachLog().then(res => setLogs(res));
+    fetchOutreachAnalytics().then(res => setAnalytics(res)).catch(() => setAnalytics(null));
   };
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function Outreach() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ member_ids: Array.from(selected) })
       });
+
       if (res.ok) {
         toast.success(`Successfully processed ${selected.size} members.`);
         setSelected(new Set());
@@ -98,6 +102,56 @@ export default function Outreach() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-sm">
           <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
+            <CardTitle className="text-lg">Outreach Effectiveness</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {analytics && analytics.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics}>
+                  <XAxis dataKey="month_name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="outreach_attempts" fill="#F37021" name="Attempts" />
+                  <Bar dataKey="successful_contacts" fill="#10b981" name="Successful" />
+                  <Bar dataKey="gaps_closed" fill="#3b82f6" name="Gaps Closed" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">No analytics data available</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="bg-slate-50 border-b border-slate-200 pb-3">
+            <CardTitle className="text-lg">Summary Metrics</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {analytics && analytics.length > 0 ? (
+              <>
+                <div className="border-b pb-3">
+                  <div className="text-sm text-slate-600">Total Attempts</div>
+                  <div className="text-2xl font-bold text-slate-900">{analytics.reduce((sum: number, a: any) => sum + (a.outreach_attempts || 0), 0)}</div>
+                </div>
+                <div className="border-b pb-3">
+                  <div className="text-sm text-slate-600">Successful Contacts</div>
+                  <div className="text-2xl font-bold text-green-600">{analytics.reduce((sum: number, a: any) => sum + (a.successful_contacts || 0), 0)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-slate-600">Gaps Closed</div>
+                  <div className="text-2xl font-bold text-blue-600">{analytics.reduce((sum: number, a: any) => sum + (a.gaps_closed || 0), 0)}</div>
+                </div>
+              </>
+            ) : (
+              <div className="text-slate-500">No data available</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 shadow-sm">
+          <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Target List</CardTitle>
               <div className="flex gap-2">
@@ -114,6 +168,7 @@ export default function Outreach() {
                     <SelectItem value="COL">COL</SelectItem>
                   </SelectContent>
                 </Select>
+
                 <Select value={filterGap} onValueChange={(val) => setFilterGap(val!)}>
                   <SelectTrigger className="w-[140px] h-8 text-xs bg-white">
                     <SelectValue placeholder="Gap Status">
@@ -126,6 +181,7 @@ export default function Outreach() {
                     <SelectItem value="YES">Compliant</SelectItem>
                   </SelectContent>
                 </Select>
+
                 <Select value={filterFollowup} onValueChange={(val) => setFilterFollowup(val!)}>
                   <SelectTrigger className="w-[140px] h-8 text-xs bg-white">
                     <SelectValue placeholder="Follow-up">
@@ -189,7 +245,7 @@ export default function Outreach() {
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-semibold text-sm text-slate-800 flex items-center gap-2">
                       {log.member_id}
-                      <Eye className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Eye className="w-3.5 h-3.5 text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                     <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">{log.status}</Badge>
                   </div>
@@ -197,9 +253,14 @@ export default function Outreach() {
                     <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{log.channel}</span>
                     <span>{log.language}</span>
                   </div>
+                  
+                  {/* --- CHANGED: Hide Raw HTML code in the list view --- */}
                   <div className="text-sm text-slate-700 line-clamp-2 bg-slate-50 border border-slate-100 p-2 rounded italic">
-                    "{log.content}"
+                    {log.content?.includes('<html') || log.content?.includes('<div') 
+                      ? "📝 [ HTML Email Template - Click to Preview ]" 
+                      : `"${log.content}"`}
                   </div>
+
                   <div className="text-[10px] text-slate-400 mt-2 text-right">
                     {new Date(log.created_at).toLocaleString()}
                   </div>
@@ -210,19 +271,37 @@ export default function Outreach() {
           </CardContent>
         </Card>
       </div>
+
+      {/* --- CHANGED: Updated Dialog to securely render HTML template in an iframe --- */}
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
-        <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-800">
-              <Activity className="w-5 h-5 text-slate-600" />
-              Outreach Message Content
+        <DialogContent className="bg-white p-0 rounded-2xl shadow-2xl overflow-hidden" style={{ maxWidth: '700px', width: '90vw' }}>
+          <DialogHeader className="p-6 pb-4 border-b border-slate-100 bg-slate-50">
+            <DialogTitle className="text-slate-800 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-orange-600" />
+                Outreach Message Preview
+              </div>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="pt-2">
               Sent to {selectedLog?.member_id} via {selectedLog?.channel} in {selectedLog?.language} on {selectedLog ? new Date(selectedLog.created_at).toLocaleString() : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 p-4 bg-slate-50 rounded-md border border-slate-200 text-sm text-slate-800 whitespace-pre-wrap font-mono leading-relaxed h-[300px] overflow-y-auto shadow-inner">
-            {selectedLog?.content}
+          
+          <div className="bg-slate-200 p-4">
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden h-[60vh] w-full flex flex-col">
+              {/* Check if content is HTML; if not, just display it as text */}
+              {selectedLog?.content?.includes('<html') || selectedLog?.content?.includes('<div') ? (
+                <iframe 
+                  srcDoc={selectedLog?.content || ''} 
+                  className="w-full h-full border-0 flex-1"
+                  title="Email Preview"
+                />
+              ) : (
+                <div className="p-6 text-slate-800 font-medium whitespace-pre-wrap">
+                  {selectedLog?.content}
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

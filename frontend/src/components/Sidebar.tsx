@@ -10,14 +10,26 @@ import { getCurrentUser, logout } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export function Sidebar() {
+
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const router = useRouter();
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Members", href: "/members", icon: Users },
     { name: "Bulk Outreach", href: "/outreach", icon: Send },
   ];
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (e) {
+      // ignore
+    }
+    try { sessionStorage.removeItem('hedis_token'); } catch { }
+    router.push('/login');
+  }
 
   return (
     <div className={`flex h-screen flex-col bg-[#FFF5EE] border-r border-orange-200/60 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[320px]'}`}>
@@ -74,9 +86,14 @@ export function Sidebar() {
             {!isCollapsed && <span className="text-sm font-semibold text-orange-950">User</span>}
           </div>
           {!isCollapsed && (
-            <button className="text-orange-400 hover:text-primary p-1 transition-colors">
-              <Settings className="w-[18px] h-[18px]" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="text-orange-400 hover:text-primary p-1 transition-colors">
+                <Settings className="w-[18px] h-[18px]" />
+              </button>
+              <Button variant="outline" size="sm" className="text-xs h-8 px-3 ml-1" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
           )}
         </div>
       </div>

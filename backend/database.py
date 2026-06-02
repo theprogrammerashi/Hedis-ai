@@ -36,6 +36,7 @@ def init_db():
                 p.address,
                 p.gender,
                 p.next_plan_of_action,
+                p.nearest_hospital,
                 q.member_id as qi_member_id,
                 q.measure,
                 q.complaint_condition as compliant,
@@ -84,6 +85,28 @@ def init_db():
                 status VARCHAR,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+            """)
+
+            # Create outreach_analytics table
+            conn.execute("""
+            CREATE TABLE IF NOT EXISTS outreach_analytics (
+                month_name VARCHAR,
+                outreach_attempts INTEGER,
+                successful_contacts INTEGER,
+                gaps_closed INTEGER,
+                sort_order INTEGER
+            )
+            """)
+            
+            # Clear existing data and insert fresh records
+            conn.execute("DELETE FROM outreach_analytics")
+            conn.execute("""
+            INSERT INTO outreach_analytics (month_name, outreach_attempts, successful_contacts, gaps_closed, sort_order) VALUES
+            ('Jan', 62, 27, 16, 1),
+            ('Feb', 55, 24, 13, 2),
+            ('Mar', 45, 24, 16, 3),
+            ('Apr', 92, 76, 30, 4),
+            ('May', 93, 66, 45, 5)
             """)
     # Ensure users and sessions tables exist for auth (best-effort)
     try:
