@@ -16,8 +16,33 @@ export default function Member360() {
   const [loading, setLoading] = useState(true);
   
   const [emailContent, setEmailContent] = useState("");
+  const [editableText, setEditableText] = useState("");
   const [generating, setGenerating] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+
+  // Extract plain text from HTML
+  const extractTextFromHtml = (html: string) => {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.innerText || "";
+  };
+
+  // Convert plain text back to HTML template
+  const convertTextToHtml = (text: string) => {
+    // If it's already HTML, return as is
+    if (text.includes("<html>") || text.includes("<div")) {
+      return text;
+    }
+    // Otherwise return plain text (will be stored as is)
+    return text;
+  };
+
+  // Real-time update of email content as user edits
+  const handleEditableTextChange = (newText: string) => {
+    setEditableText(newText);
+    // Update the email content in real-time for preview
+    setEmailContent(newText);
+  };
   
   const loadLogs = (profileId: string) => {
     fetchOutreachLog().then((allLogs) => {
@@ -47,8 +72,9 @@ export default function Member360() {
     try {
       const res = await generateEmail(member.id_normalized);
       setEmailContent(res.content);
+      setEditableText(extractTextFromHtml(res.content));
       await saveEmailDraft(member.id_normalized, res.content, member.primary_language);
-      toast("AI Email Generated & Saved as Draft");
+      toast("Email Template Generated & Saved as Draft");
       loadLogs(member.profile_member_id);
     } catch (e) {
       toast("Error generating email");
@@ -58,6 +84,7 @@ export default function Member360() {
 
   const handleSaveDraft = async () => {
     try {
+      // Save the HTML content, not the editable text
       await saveEmailDraft(member.id_normalized, emailContent, member.primary_language);
       toast("Draft updated successfully");
       loadLogs(member.profile_member_id);
@@ -219,15 +246,27 @@ export default function Member360() {
             </div>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <Textarea 
-                  value={emailContent} 
-                  onChange={(e) => setEmailContent(e.target.value)}
-                  className="min-h-[200px] border-none focus-visible:ring-0 resize-none text-slate-700 leading-relaxed"
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div 
+                  ref={(el) => {
+                    if (el && !el.innerHTML) {
+                      el.innerHTML = emailContent;
+                    }
+                  }}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(e) => {
+                    const newContent = e.currentTarget.innerHTML;
+                    setEditableText(newContent);
+                    setEmailContent(newContent);
+                  }}
+                  className="w-full min-h-[700px] p-6 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 text-slate-700 leading-relaxed overflow-y-auto"
+                  style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}
                 />
               </div>
+
               <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={() => setEmailContent("")} className="px-6 py-5 rounded-xl">Discard</Button>
+                <Button variant="outline" onClick={() => { setEmailContent(""); setEditableText(""); }} className="px-6 py-5 rounded-xl">Discard</Button>
                 <Button variant="secondary" onClick={handleSaveDraft} className="px-6 py-5 rounded-xl flex items-center gap-2">
                   <Save className="w-4 h-4" /> Save Draft
                 </Button>
@@ -241,49 +280,6 @@ export default function Member360() {
       </Card>
 
       {/* Communication Log Section */}
-      <Card className="shadow-sm border-slate-200">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between py-4">
-          <CardTitle className="text-slate-900 font-semibold text-lg m-0">Communication Log</CardTitle>
-          <Badge variant="secondary" className="bg-slate-100 text-slate-600 border border-slate-200 font-medium px-3 py-1">
-            {logs.length} records
-          </Badge>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-slate-100 flex flex-col">
-            {logs.map((log: any, idx: number) => (
-              <div key={idx} className="p-6 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${log.channel === 'SMS' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                  {log.channel === 'SMS' ? <MessageSquare className="w-5 h-5" /> : <Mail className="w-5 h-5" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                   <div className="flex items-center justify-between mb-1">
-                     <h5 className="text-slate-800 font-semibold text-sm">{log.channel} — {log.language}</h5>
-                     <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeleteLog(log.id)}>
-                       <Trash2 className="w-4 h-4" />
-                     </Button>
-                   </div>
-                   <p className="text-slate-500 text-sm mb-3 truncate max-w-2xl">{log.content}</p>
-                   <div className="flex items-center gap-3">
-                     <Badge className={log.status === 'Sent' ? 'bg-green-100 text-green-700 hover:bg-green-100 shadow-none border-none font-medium' : 'bg-amber-100 text-amber-700 hover:bg-amber-100 shadow-none border-none font-medium'}>
-                       {log.status}
-                     </Badge>
-                     <span className="text-xs text-slate-400 font-medium tracking-wide">
-                       {new Date(log.created_at).toLocaleDateString()} {', '}
-                       {new Date(log.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                     </span>
-                   </div>
-                </div>
-              </div>
-            ))}
-            {logs.length === 0 && (
-              <div className="p-10 text-center flex flex-col items-center text-slate-500">
-                <FileText className="w-10 h-10 text-slate-300 mb-3" />
-                <p>No communication history found for this member.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

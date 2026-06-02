@@ -69,6 +69,12 @@ export async function clearOutreachLog() {
   return res.json();
 }
 
+export async function fetchOutreachAnalytics() {
+  const res = await fetch(`${API_BASE}/outreach/analytics`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch analytics');
+  return res.json();
+}
+
 export async function saveEmailDraft(memberId: number, content: string, language: string) {
   const res = await fetch(`${API_BASE}/outreach/log/draft`, {
     method: 'POST',

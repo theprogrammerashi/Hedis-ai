@@ -10,6 +10,7 @@ class MemberBase(BaseModel):
     address: str
     gender: str
     next_plan_of_action: Optional[str]
+    nearest_hospital: Optional[str]
     measure: str
     compliant: str
     follow_up: str

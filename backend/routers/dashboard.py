@@ -6,21 +6,46 @@ router = APIRouter()
 @router.get("/kpis")
 def get_kpis():
     conn = get_db()
-    
-    total_members = conn.execute("SELECT COUNT(DISTINCT profile_member_id) FROM patient_360").fetchone()[0]
-    care_gaps_open = conn.execute("SELECT COUNT(*) FROM patient_360 WHERE compliant = 'NO'").fetchone()[0]
-    follow_up_pending = conn.execute("SELECT COUNT(*) FROM patient_360 WHERE follow_up = 'N'").fetchone()[0]
-    total_emails_sent = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE channel = 'Email'").fetchone()[0]
-    
-    # Priority alert members (critical)
+
+    total_members = conn.execute(
+        "SELECT COUNT(DISTINCT profile_member_id) FROM patient_360"
+    ).fetchone()[0]
+
+    care_gaps_open = conn.execute(
+        "SELECT COUNT(*) FROM patient_360 WHERE compliant = 'NO'"
+    ).fetchone()[0]
+
+    follow_up_pending = conn.execute(
+        "SELECT COUNT(*) FROM patient_360 WHERE follow_up = 'N'"
+    ).fetchone()[0]
+
+    total_emails_sent = conn.execute("""
+        SELECT COUNT(*)
+        FROM outreach_log
+        WHERE channel = 'Email' AND status = 'Sent'
+    """).fetchone()[0]
+
     priority_alerts = conn.execute("""
-        SELECT profile_member_id, member_name, measure, transportation_access
-        FROM patient_360 
-        WHERE priority = 'CRITICAL' AND transportation_access = 'N'
+        SELECT id_normalized,
+               member_name,
+               measure,
+               transportation_access,
+               compliant
+        FROM patient_360
+        WHERE priority = 'CRITICAL'
     """).fetchall()
-    
-    alerts = [{"id": a[0], "name": a[1], "measure": a[2], "transport": a[3]} for a in priority_alerts]
-    
+
+    alerts = [
+        {
+            "id_normalized": a[0],
+            "member_name": a[1],
+            "measure": a[2],
+            "transportation_access": a[3],
+            "compliant": a[4]
+        }
+        for a in priority_alerts
+    ]
+
     return {
         "total_members": total_members,
         "care_gaps_open": care_gaps_open,
@@ -65,19 +90,37 @@ def get_charts():
         {"factor": "Far Provider (>10mi)", "count": far_provider},
     ]
 
-    # Simulated monthly care gap closure trend
-    outreach_effectiveness = [
-        {"month": "Jan", "value": 20},
-        {"month": "Feb", "value": 35},
-        {"month": "Mar", "value": 45},
-        {"month": "Apr", "value": 75},
-        {"month": "May", "value": 90},
-    ]
+    # --- MOVED FROM OUTREACH ---
+    # Real outreach analytics data for the graph and table
+    analytics_df = conn.execute("SELECT month_name, outreach_attempts, successful_contacts, gaps_closed FROM outreach_analytics ORDER BY sort_order ASC").df()
+    analytics_df = analytics_df.where(analytics_df.notnull(), None)
+    
+    outreach_effectiveness = []
+    for row in analytics_df.to_dict(orient="records"):
+        outreach_effectiveness.append({
+            "month": row["month_name"],
+            "value": row["gaps_closed"], # Passed as 'value' so your existing graph still works
+            "outreach_attempts": row["outreach_attempts"],
+            "successful_contacts": row["successful_contacts"],
+            "gaps_closed": row["gaps_closed"]
+        })
+
+    # Summary Metrics (Calculated Totals)
+    total_attempts = int(analytics_df["outreach_attempts"].sum()) if not analytics_df.empty else 0
+    total_success = int(analytics_df["successful_contacts"].sum()) if not analytics_df.empty else 0
+    total_closed = int(analytics_df["gaps_closed"].sum()) if not analytics_df.empty else 0
+
+    outreach_summary = {
+        "total_attempts": total_attempts,
+        "total_successful_contacts": total_success,
+        "total_gaps_closed": total_closed
+    }
 
     return {
         "members_by_measure": members_by_measure,
         "compliance_rate": compliance_rate,
         "language_distribution": language_distribution,
         "sdoh_factors": sdoh_factors,
-        "outreach_effectiveness": outreach_effectiveness
+        "outreach_effectiveness": outreach_effectiveness,
+        "outreach_summary": outreach_summary # New object for the summary metrics
     }

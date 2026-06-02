@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { fetchKPIs, fetchCharts, fetchMembers, fetchOutreachLog } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, AlertCircle, PhoneMissed, Mail, Download, Eye } from "lucide-react";
+// --- CHANGED: Added Activity, TrendingUp, and CheckCircle2 to imports ---
+import { Users, AlertCircle, PhoneMissed, Mail, Download, Eye, Activity, TrendingUp, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,18 +24,25 @@ export default function Dashboard() {
   const [dialogMembers, setDialogMembers] = useState<any[]>([]);
   const [dialogLoading, setDialogLoading] = useState(false);
 
+
   const openMetricDialog = async (metric: string) => {
     setSelectedMetric(metric);
     setDialogLoading(true);
     try {
       if (metric === 'emails') {
         const logs = await fetchOutreachLog();
-        setDialogMembers(logs.filter((l: any) => l.channel === 'Email'));
+        setDialogMembers(logs.filter((l: any) => l.channel === 'Email' && l.status === 'Sent'));
       } else {
         const res = await fetchMembers({ limit: 1000 });
         const all = res.data || [];
-        if (metric === 'critical') setDialogMembers(all.filter((m: any) => m.priority === 'CRITICAL'));
-        else if (metric === 'gaps') setDialogMembers(all.filter((m: any) => m.compliant === 'NO'));
+        if (metric === 'critical') {
+          if (kpis?.priority_alerts && kpis.priority_alerts.length > 0) {
+            setDialogMembers(kpis.priority_alerts);
+          } else {
+            // --- CHANGED: Remove "&& m.transportation_access === 'N'" ---
+            setDialogMembers(all.filter((m: any) => m.priority === 'CRITICAL'));
+          }
+        } else if (metric === 'gaps') setDialogMembers(all.filter((m: any) => m.compliant === 'NO'));
         else if (metric === 'followup') setDialogMembers(all.filter((m: any) => m.follow_up === 'N'));
       }
     } catch (e) {
@@ -47,6 +55,7 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([fetchKPIs(), fetchCharts()]).then(([kpiData, chartData]) => {
       setKpis(kpiData);
+      console.log('KPIs:', kpiData);
       setCharts(chartData);
       setLoading(false);
     });
@@ -100,6 +109,7 @@ export default function Dashboard() {
             <PhoneMissed className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
+            {/* Change this line from {kpis?.care_gaps_open} to {kpis?.follow_up_pending} */}
             <div className="text-3xl font-bold text-purple-900">{kpis?.follow_up_pending}</div>
           </CardContent>
         </Card>
@@ -231,31 +241,93 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Outreach Effectiveness */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-900">Outreach Effectiveness</CardTitle>
-            <p className="text-sm text-slate-500">Simulated monthly care gap closure trend</p>
+        {/* --- CHANGED: NEW OUTREACH EFFECTIVENESS WITH TABLE & SUMMARY --- */}
+        <Card className="shadow-sm border-slate-200 overflow-hidden mt-8">
+          <CardHeader className="bg-slate-100 border-b border-slate-200">
+            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-indigo-600" /> 
+              Outreach Analytics & Effectiveness
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pt-8 pb-4">
-            <div className="flex items-end h-[120px] gap-2 w-full">
-              {charts?.outreach_effectiveness?.map((item: any, idx: number) => {
-                const maxVal = 100;
-                const height = `${(item.value / maxVal) * 100}%`;
-                // Generate progressively darker blue colors
-                const opacities = ['bg-slate-100', 'bg-slate-200', 'bg-slate-300', 'bg-slate-400', 'bg-slate-500'];
-                const bgColor = opacities[idx % opacities.length];
-                
-                return (
-                  <div key={idx} className="flex flex-col items-center flex-1 h-full justify-end group">
-                    <div 
-                      className={`w-full rounded-t-sm ${bgColor} transition-all duration-300 group-hover:opacity-90`}
-                      style={{ height }}
-                    />
-                    <div className="text-xs text-slate-500 mt-3 font-medium">{item.month}</div>
-                  </div>
-                );
-              })}
+          <CardContent className="p-6">
+            
+            {/* Summary Mini-Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-100 flex items-center gap-4">
+                <div className="p-3 bg-orange-100 rounded-full text-orange-600">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-orange-600">Total Attempts</p>
+                  <p className="text-2xl font-bold text-orange-900">{charts?.outreach_summary?.total_attempts || 0}</p>
+                </div>
+              </div>
+              
+              <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 flex items-center gap-4">
+                <div className="p-3 bg-sky-100 rounded-full text-sky-600">
+                  <PhoneMissed className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-sky-600">Successful Contacts</p>
+                  <p className="text-2xl font-bold text-sky-900">{charts?.outreach_summary?.total_successful_contacts || 0}</p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 flex items-center gap-4">
+                <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-emerald-600">Total Gaps Closed</p>
+                  <p className="text-2xl font-bold text-emerald-900">{charts?.outreach_summary?.total_gaps_closed || 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              {/* Outreach Chart */}
+              <div className="h-80 w-full">
+                <h3 className="text-sm font-semibold text-slate-500 mb-4 uppercase tracking-wider">Gap Closure Trend</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={charts?.outreach_effectiveness}>
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                    <YAxis axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} />
+                    <Bar dataKey="value" name="Gaps Closed" fill="#d68e08" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Outreach Table */}
+              <div className="w-full overflow-x-auto border rounded-lg border-slate-200">
+                <table className="w-full text-sm text-left text-slate-600">
+                  <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Month</th>
+                      <th className="px-4 py-3 font-semibold text-right">Attempts</th>
+                      <th className="px-4 py-3 font-semibold text-right">Contacts</th>
+                      <th className="px-4 py-3 font-semibold text-right">Gaps Closed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {charts?.outreach_effectiveness?.map((row: any, idx: number) => (
+                      <tr key={idx} className="bg-white border-b hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900">{row.month}</td>
+                        <td className="px-4 py-3 text-right">{row.outreach_attempts}</td>
+                        <td className="px-4 py-3 text-right">{row.successful_contacts}</td>
+                        <td className="px-4 py-3 text-right text-indigo-600 font-bold">{row.gaps_closed}</td>
+                      </tr>
+                    ))}
+                    {/* Total Row */}
+                    <tr className="bg-slate-50 font-bold text-slate-900">
+                      <td className="px-4 py-3">TOTAL</td>
+                      <td className="px-4 py-3 text-right">{charts?.outreach_summary?.total_attempts || 0}</td>
+                      <td className="px-4 py-3 text-right">{charts?.outreach_summary?.total_successful_contacts || 0}</td>
+                      <td className="px-4 py-3 text-right text-indigo-700">{charts?.outreach_summary?.total_gaps_closed || 0}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -296,25 +368,9 @@ export default function Dashboard() {
                     dialogMembers.map((m: any, idx: number) => (
                       <TableRow key={idx}>
                         {selectedMetric === 'emails' ? (
-                          <>
-                            <TableCell>
-                              <div className="font-medium text-slate-900">{m.member_id}</div>
-                              <div className="text-xs text-slate-500 truncate max-w-[200px]" title={m.content}>{m.content}</div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="bg-white">{m.channel}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">{m.status}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Link href={`/outreach`}>
-                                <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 font-medium">
-                                  <Eye className="w-4 h-4 mr-2" /> View Outreach
-                                </Button>
-                              </Link>
-                            </TableCell>
-                          </>
+                          <TableCell colSpan={4}>
+                            <div className="font-medium text-slate-900">{m.member_id}</div>
+                          </TableCell>
                         ) : (
                           <>
                             <TableCell>
